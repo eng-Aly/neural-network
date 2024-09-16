@@ -1,0 +1,77 @@
+import numpy as np
+import mnist
+
+def sigmoid(v):
+    return 1 / (1 + np.exp(-v))
+
+# Derivative of sigmoid
+def sigmoid_derivative(v):
+    return sigmoid(v) * (1 - sigmoid(v))
+
+# Neural Network class
+class NeuralNetwork:
+    def __init__(self, layers):
+        self.layersnumber = len(layers)
+        self.layers = layers
+        self.bias_list = [np.random.randn(n, 1) for n in layers[1:]]
+        self.weight_list = [np.random.randn(next_layer, prev_layer) 
+                            for prev_layer, next_layer in zip(layers[:-1], layers[1:])]
+
+    def forward_pass(self, inputs):
+        for b, w in zip(self.bias_list, self.weight_list):
+            inputs = sigmoid(np.dot(w, inputs) + b)
+        return inputs
+
+    
+    def backward_pass(self, inputs, expected_output):
+        Bgradient = [np.zeros(b.shape) for b in self.bias_list]
+        Wgradient = [np.zeros(w.shape) for w in self.weight_list]
+
+        # Feedforward phase
+        activation = inputs
+        activations = [inputs]
+        Zvalues = []  # Z values
+        for b, w in zip(self.bias_list, self.weight_list):
+            z = np.dot(w, activation) + b
+            Zvalues.append(z)
+            activation = sigmoid(z)
+            activations.append(activation)
+
+        # Backpropagate the error
+        delta =  sigmoid_derivative(Zvalues[-1])*(activations[-1] - expected_output) 
+        Bgradient[-1] = delta
+        Wgradient[-1] = np.dot(delta, activations[-2].T)
+
+        for l in range(2, self.layersnumber):
+            z = Zvalues[-l]
+            delta = np.dot(self.weight_list[-l + 1].T, delta) * sigmoid_derivative(z)
+            Bgradient[-l] = delta
+            Wgradient[-l] = np.dot(delta, activations[-l-1].T)
+        return Bgradient, Wgradient
+
+    # Update weights using gradient descent
+    def update_weights(self, mini_batch, eta):
+        Bgradient = [np.zeros(b.shape) for b in self.bias_list]
+        Wgradient = [np.zeros(w.shape) for w in self.weight_list]
+        for x, y in mini_batch:
+            delta_b, delta_w = self.backward_pass(x, y)
+            Bgradient = [gb + db for gb, db in zip(Bgradient, delta_b)]
+            Wgradient = [gw + dw for gw, dw in zip(Wgradient, delta_w)]
+        self.weight_list = [w - (eta / len(mini_batch)) * gw for w, gw in zip(self.weight_list, Wgradient)]
+        self.bias_list = [b - (eta / len(mini_batch)) * gb for b, gb in zip(self.bias_list, Bgradient)]
+
+    # Train the network
+    def train(self, training_data, epochs, mini_batch_size, eta):
+        for epoch in range(epochs):
+            np.random.shuffle(training_data)
+            pieces = [training_data[k:k+mini_batch_size] for k in range(0, len(training_data), mini_batch_size)]
+            for piece in pieces:
+                self.update_weights(piece, eta)
+            print(f"Epoch {epoch+1} complete")
+
+
+
+
+training_images = mnist.train_images().reshape(-1, 784, 1) / 255
+training_labels = mnist.train_labels()
+training_data = [(x, vectorized_label(y)) for x, y in zip(training_images, training_labels)]
