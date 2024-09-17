@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import mnist
 
 
 class torchNetwork(nn.Module):
@@ -28,3 +29,12 @@ for epoch in range(30):
         loss = loss_function(predictions, targets)
         loss.backward()
         optim_tool.step()
+training_images = mnist.train_images().reshape(-1, 784, 1) / 255
+training_labels = mnist.train_labels()
+
+def vectorized_label(j):
+    e = np.zeros((10, 1))
+    e[j] = 1.0
+    return e
+
+training_data = [(x, vectorized_label(y)) for x, y in zip(training_images, training_labels)]
