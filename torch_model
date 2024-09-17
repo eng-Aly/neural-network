@@ -1,0 +1,30 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+
+class torchNetwork(nn.Module):
+    def __init__(self):
+        super(torchNetwork, self).__init__()
+        self.layer1 = nn.Linear(784, 30)
+        self.layer2 = nn.Linear(30, 10)
+
+    def forward(self, x):
+        x = torch.sigmoid(self.layer1(x))
+        x = torch.sigmoid(self.layer2(x))
+        return x
+
+
+net = torchNetwork()
+loss_function = nn.MSELoss()
+optim_tool = optim.SGD(net.parameters(), lr=0.01)
+
+
+for epoch in range(30):
+    for i, data in enumerate(training_data):
+        inputs, targets = torch.tensor(training_images[i], dtype=torch.float32), torch.tensor(vectorized_label(training_labels[i]), dtype=torch.float32)
+        optim_tool.zero_grad()
+        predictions = net(inputs.view(-1, 784))
+        loss = loss_function(predictions, targets)
+        loss.backward()
+        optim_tool.step()
